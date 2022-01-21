@@ -1,0 +1,31 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.2'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'com.file'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'commons-io:commons-io:2.11.0'
+	implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
+	implementation 'org.apache.commons:commons-csv:1.8'
+	implementation 'org.zeroturnaround:zt-zip:1.14'
+	implementation 'com.amazonaws:aws-java-sdk:1.12.142'
+
+
+
+
+}
+
+test {
+	useJUnitPlatform()
+}
