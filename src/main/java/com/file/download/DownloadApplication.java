@@ -43,7 +43,8 @@ public class DownloadApplication {
         SpringApplication.run(DownloadApplication.class, args);
 
         //try (Reader reader = Files.newBufferedReader(Paths.get("D:\\demo_projects\\download\\src\\main\\resources\\inputcsv.csv"));
-        try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
+        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
             for (CSVRecord csvRecord : csvParser) {
                 String name = csvRecord.get("name");
@@ -106,14 +107,15 @@ public class DownloadApplication {
         logger.info("----uploadObjectUsingCLI method called---");
         Regions clientRegion = Regions.US_EAST_2;
         String bucketName = "coherent-commons-digital-assets-source";
+        String bucketFullPath = bucketName+"/CWEE/";
         String nameOfFileToStore = file.getName();
         try {
             Instant start = Instant.now();
             // Get an object and print its contents.
-            logger.info("---uploading an object with name :: "+nameOfFileToStore + " to bucket :: "+bucketName+"/"+nameOfFileToStore);
+            logger.info("---uploading an object with name :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
             ProcessBuilder processBuilder = new ProcessBuilder();
             //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
-            String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketName;
+            String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
             logger.info("---AWS cli:: "+command);
             processBuilder.command("bash", "-c", command);
             Process process = processBuilder.start();
