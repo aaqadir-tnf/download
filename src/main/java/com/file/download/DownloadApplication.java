@@ -1,7 +1,12 @@
 package com.file.download;
 
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -15,19 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-
-import java.io.File;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -45,6 +38,7 @@ public class DownloadApplication {
         //try (Reader reader = Files.newBufferedReader(Paths.get("D:\\demo_projects\\download\\src\\main\\resources\\inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
         try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("wtss_inputcsv.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
             for (CSVRecord csvRecord : csvParser) {
                 String name = csvRecord.get("name");
@@ -81,6 +75,36 @@ public class DownloadApplication {
         }
     }
 
+    //upload using AWS CLI, its is comparatively faster
+    private static void uploadObjectUsingCLI(File file) {
+        logger.info("----uploadObjectUsingCLI method called---");
+        Regions clientRegion = Regions.US_EAST_2;
+        String bucketName = "coherent-commons-digital-assets-source";
+        //String bucketFullPath = bucketName+"/SEFI/"; //folder for SWWF
+        String bucketFullPath = bucketName+"/CWEE/"; //folder for CWEE
+        //String bucketFullPath = bucketName+"/BRHO/"; //folder for WTSS
+        String nameOfFileToStore = file.getName();
+        try {
+            Instant start = Instant.now();
+            // Get an object and print its contents.
+            logger.info("---uploading an object with name :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
+            String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
+            logger.info("---AWS cli:: "+command);
+            processBuilder.command("bash", "-c", command);
+            Process process = processBuilder.start();
+
+            Instant end = Instant.now();
+            Duration timeElapsed = Duration.between(start, end);
+            logger.info("---Time taken uploadObjectUsingCLI: "+ timeElapsed.toMillis() +" milliseconds");
+
+        } catch (SdkClientException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //upload using AWS SDK, its is comparatively slower than AWS CLI
     private static File uploadObject(File file) {
         logger.info("----uploadObject method called---");
         Regions clientRegion = Regions.US_EAST_2;
@@ -101,32 +125,6 @@ public class DownloadApplication {
             e.printStackTrace();
         }
         return file;
-    }
-
-    private static void uploadObjectUsingCLI(File file) {
-        logger.info("----uploadObjectUsingCLI method called---");
-        Regions clientRegion = Regions.US_EAST_2;
-        String bucketName = "coherent-commons-digital-assets-source";
-        String bucketFullPath = bucketName+"/CWEE/";
-        String nameOfFileToStore = file.getName();
-        try {
-            Instant start = Instant.now();
-            // Get an object and print its contents.
-            logger.info("---uploading an object with name :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
-            String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
-            logger.info("---AWS cli:: "+command);
-            processBuilder.command("bash", "-c", command);
-            Process process = processBuilder.start();
-
-            Instant end = Instant.now();
-            Duration timeElapsed = Duration.between(start, end);
-            logger.info("---Time taken uploadObjectUsingCLI: "+ timeElapsed.toMillis() +" milliseconds");
-
-        } catch (SdkClientException | IOException e) {
-            e.printStackTrace();
-        }
     }
 }
 
