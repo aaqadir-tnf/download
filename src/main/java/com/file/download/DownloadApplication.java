@@ -1,7 +1,12 @@
 package com.file.download;
 
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -15,19 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-
-import java.io.File;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -35,7 +28,8 @@ import java.time.Instant;
 public class DownloadApplication {
     private static final Logger logger = LogManager.getLogger(DownloadApplication.class);
 
-    static String destination = "/home/dartsapp/temp/";
+    //static String destination = "/home/dartsapp/temp/";
+    static String destination = "/home/dartsapp/temp/DARTS1456/";
     //static String destination = "D:\\ToBeDeleted\\";
 
 
@@ -98,7 +92,7 @@ public class DownloadApplication {
             String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
             logger.info("---AWS cli:: "+command);
             processBuilder.command("bash", "-c", command);
-            Process process = processBuilder.start();
+            processBuilder.start();
 
             Instant end = Instant.now();
             Duration timeElapsed = Duration.between(start, end);
