@@ -32,7 +32,7 @@ public class DownloadApplication {
     //static String destination = "D:\\ToBeDeleted\\";
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         SpringApplication.run(DownloadApplication.class, args);
 
         //try (Reader reader = Files.newBufferedReader(Paths.get("D:\\demo_projects\\download\\src\\main\\resources\\inputcsv.csv"));
@@ -61,51 +61,43 @@ public class DownloadApplication {
                     Instant uploadEnd = Instant.now();
                     logger.info("----uploading Done---");
 
-                    Duration ziptimeElapsed = Duration.between(zipStart, uploadStart);
-                    Duration uploadtimeElapsed = Duration.between(uploadStart, uploadEnd);
-
-                    logger.info("Time taken to zip: "+ ziptimeElapsed.toMillis() +" milliseconds");
-                    logger.info("Time taken to upload: "+ uploadtimeElapsed.toMillis() +" milliseconds");
+                    logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
+                    logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
 
                 } else {
                     logger.info("***Not found, Hence ignoring this path****");
                 }
-
             }
+        } catch (IOException ex){
+            ex.printStackTrace();
         }
     }
 
     //upload using AWS CLI, its is comparatively faster
     private static void uploadObjectUsingCLI(File file) {
-        logger.info("----uploadObjectUsingCLI method called---");
-        Regions clientRegion = Regions.US_EAST_2;
+        logger.info("----uploadObjectUsingCLI start---");
         String bucketName = "coherent-commons-digital-assets-source";
         //String bucketFullPath = bucketName+"/SEFI/"; //folder for SWWF
         String bucketFullPath = bucketName+"/CWEE/"; //folder for CWEE
         //String bucketFullPath = bucketName+"/BRHO/"; //folder for WTSS
         String nameOfFileToStore = file.getName();
         try {
-            Instant start = Instant.now();
             // Get an object and print its contents.
-            logger.info("---uploading an object with name :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
+            logger.info("---uploading an object :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
             ProcessBuilder processBuilder = new ProcessBuilder();
             //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
             String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
             logger.info("---AWS cli:: "+command);
             processBuilder.command("bash", "-c", command);
-            Process process = processBuilder.start();
-
-            Instant end = Instant.now();
-            Duration timeElapsed = Duration.between(start, end);
-            logger.info("---Time taken uploadObjectUsingCLI: "+ timeElapsed.toMillis() +" milliseconds");
-
+            processBuilder.start();
+            logger.info("---uploadObjectUsingCLI completed");
         } catch (SdkClientException | IOException e) {
             e.printStackTrace();
         }
     }
 
     //upload using AWS SDK, its is comparatively slower than AWS CLI
-    private static File uploadObject(File file) {
+    /*private static File uploadObject(File file) {
         logger.info("----uploadObject method called---");
         Regions clientRegion = Regions.US_EAST_2;
         String bucketName = "coherent-commons-digital-assets-source";
@@ -125,6 +117,6 @@ public class DownloadApplication {
             e.printStackTrace();
         }
         return file;
-    }
+    }*/
 }
 
