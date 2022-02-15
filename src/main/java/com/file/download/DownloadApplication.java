@@ -1,12 +1,6 @@
 package com.file.download;
 
 import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -30,16 +24,18 @@ public class DownloadApplication {
 
     static String destination = "/home/dartsapp/temp/";
     //static String destination = "D:\\ToBeDeleted\\";
+    //static String destination = "/home/dartsapp/temp/cwee_instance_2/";
 
 
     public static void main(String[] args) {
         SpringApplication.run(DownloadApplication.class, args);
 
-        //try (Reader reader = Files.newBufferedReader(Paths.get("D:\\demo_projects\\download\\src\\main\\resources\\inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
-        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("wtss_inputcsv.csv"));
+        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv_2.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+            ProcessBuilder processBuilder = new ProcessBuilder();
             for (CSVRecord csvRecord : csvParser) {
                 String name = csvRecord.get("name");
                 String archive_location = csvRecord.get("archive_location");
@@ -51,15 +47,12 @@ public class DownloadApplication {
                     logger.info("----Directory Exist, start zipping---");
 
                     String zipFilePath = destination + name + ".zip";
-                    //ZipUtil.pack(new File("D:\\ToBeDeleted\\swwf.cab81.0138_b313822f-0bdd-489b-b4f7-f01d7175f35e"), new File(destination+name+".zip"));
                     ZipUtil.pack(new File(archive_location), new File(zipFilePath));
                     Instant uploadStart = Instant.now();
                     logger.info("----start uploading---");
-                    //uploadObject(new File(zipFilePath));
-                    uploadObjectUsingCLI(new File(zipFilePath));
+                    uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
 
                     Instant uploadEnd = Instant.now();
-                    logger.info("----uploading Done---");
 
                     logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
                     logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
@@ -74,7 +67,7 @@ public class DownloadApplication {
     }
 
     //upload using AWS CLI, its is comparatively faster
-    private static void uploadObjectUsingCLI(File file) {
+    private static void uploadObjectUsingCLI(File file, ProcessBuilder processBuilder) {
         logger.info("----uploadObjectUsingCLI start---");
         String bucketName = "coherent-commons-digital-assets-source";
         //String bucketFullPath = bucketName+"/SEFI/"; //folder for SWWF
@@ -83,17 +76,30 @@ public class DownloadApplication {
         String nameOfFileToStore = file.getName();
         try {
             // Get an object and print its contents.
-            logger.info("---uploading an object :: "+nameOfFileToStore + " to bucket :: "+bucketFullPath+"/"+nameOfFileToStore);
-            ProcessBuilder processBuilder = new ProcessBuilder();
             //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
-            String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
-            logger.info("---AWS cli:: "+command);
-            processBuilder.command("bash", "-c", command);
-            processBuilder.start();
+            //String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
+            StringBuilder com = new StringBuilder();
+            com.append("aws s3 mv ");
+            com.append(nameOfFileToStore);
+            com.append(" s3://");
+            com.append(bucketFullPath);
+
+            logger.info("---AWS cli:: "+com);
+            processBuilder.command("bash", "-c", String.valueOf(com));
+            Process process = processBuilder.start();
+            stopProcessOnCompletion(process);
             logger.info("---uploadObjectUsingCLI completed");
         } catch (SdkClientException | IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void stopProcessOnCompletion(Process process) {
+        //logger.info("---stopProcessOnCompletion");
+        process.destroy();
+        logger.info("---destroy");
+        //process.destroyForcibly();
+        //logger.info("---destroyForcibly");
     }
 
     //upload using AWS SDK, its is comparatively slower than AWS CLI
