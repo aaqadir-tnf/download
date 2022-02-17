@@ -1,8 +1,10 @@
 package com.file.download;
 
 import com.amazonaws.SdkClientException;
+import com.opencsv.CSVWriter;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -23,7 +26,6 @@ public class DownloadApplication {
     private static final Logger logger = LogManager.getLogger(DownloadApplication.class);
 
     static String destination = "/home/dartsapp/temp/";
-    //static String destination = "D:\\ToBeDeleted\\";
     //static String destination = "/home/dartsapp/temp/cwee_instance_2/";
 
 
@@ -51,6 +53,7 @@ public class DownloadApplication {
                     Instant uploadStart = Instant.now();
                     logger.info("----start uploading---");
                     uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
+                    appendOutputFile(name);
 
                     Instant uploadEnd = Instant.now();
 
@@ -63,6 +66,16 @@ public class DownloadApplication {
             }
         } catch (IOException ex){
             ex.printStackTrace();
+        }
+    }
+
+    private static void appendOutputFile(String name) {
+        logger.info("----appendOutputFile start---");
+        try (CSVWriter csvWriter = new CSVWriter(new FileWriter("output.csv", true))) {
+            csvWriter.writeNext(new String[]{name});
+            logger.info("----csvWriter end---");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -86,8 +99,8 @@ public class DownloadApplication {
 
             logger.info("---AWS cli:: "+com);
             processBuilder.command("bash", "-c", String.valueOf(com));
-            Process process = processBuilder.start();
-            stopProcessOnCompletion(process);
+            processBuilder.start();
+            //stopProcessOnCompletion(process);
             logger.info("---uploadObjectUsingCLI completed");
         } catch (SdkClientException | IOException e) {
             e.printStackTrace();
