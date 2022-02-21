@@ -27,6 +27,7 @@ public class DownloadApplication {
 
     static String destination = "/home/dartsapp/temp/";
     //static String destination = "/home/dartsapp/temp/cwee_instance_2/";
+    //static String destination = "/home/dartsapp/temp/cwee_3/";
 
 
     public static void main(String[] args) {
@@ -36,6 +37,7 @@ public class DownloadApplication {
         //try (Reader reader = Files.newBufferedReader(Paths.get("wtss_inputcsv.csv"));
         try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv_2.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_3.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
             ProcessBuilder processBuilder = new ProcessBuilder();
             for (CSVRecord csvRecord : csvParser) {
@@ -45,20 +47,20 @@ public class DownloadApplication {
                 logger.info("Archive_location: " + archive_location);
 
                 if (Files.isDirectory(Paths.get(archive_location))) {
-                    Instant zipStart = Instant.now();
+                    //Instant zipStart = Instant.now();
                     logger.info("----Directory Exist, start zipping---");
 
                     String zipFilePath = destination + name + ".zip";
                     ZipUtil.pack(new File(archive_location), new File(zipFilePath));
-                    Instant uploadStart = Instant.now();
+                    //Instant uploadStart = Instant.now();
                     logger.info("----start uploading---");
                     uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
                     appendOutputFile(name);
 
-                    Instant uploadEnd = Instant.now();
+                    //Instant uploadEnd = Instant.now();
 
-                    logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
-                    logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
+                    //logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
+                    //logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
 
                 } else {
                     logger.info("***Not found, Hence ignoring this path****");
