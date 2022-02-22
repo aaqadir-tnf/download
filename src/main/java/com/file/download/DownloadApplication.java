@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 public class DownloadApplication {
     private static final Logger logger = LogManager.getLogger(DownloadApplication.class);
 
-    //static String destination = "/home/dartsapp/temp/";
+    static String destination = "/home/dartsapp/temp/";
     //static String destination = "/home/dartsapp/temp/cwee_instance_2/";
-    static String destination = "/home/dartsapp/temp/cwee_3/";
+    //static String destination = "/home/dartsapp/temp/cwee_3/";
 
 
     public static void main(String[] args) {
@@ -33,9 +33,9 @@ public class DownloadApplication {
 
         //try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("wtss_inputcsv.csv"));
-        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
+        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv_2.csv"));
-        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_3.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_3.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
             ProcessBuilder processBuilder = new ProcessBuilder();
             for (CSVRecord csvRecord : csvParser) {
