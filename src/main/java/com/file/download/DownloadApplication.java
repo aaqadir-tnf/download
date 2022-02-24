@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
@@ -31,8 +33,6 @@ public class DownloadApplication {
     public static void main(String[] args) {
         SpringApplication.run(DownloadApplication.class, args);
 
-        //try (Reader reader = Files.newBufferedReader(Paths.get("swwf_inputcsv.csv"));
-        //try (Reader reader = Files.newBufferedReader(Paths.get("wtss_inputcsv.csv"));
         try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv_2.csv"));
         //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_3.csv"));
@@ -45,17 +45,17 @@ public class DownloadApplication {
                 logger.info("Archive_location: " + archive_location);
 
                 if (Files.isDirectory(Paths.get(archive_location))) {
-                    //Instant zipStart = Instant.now();
+                    Instant zipStart = Instant.now();
                     logger.info("----Directory Exist, start zipping---");
                     String zipFilePath = destination + name + ".zip";
                     ZipUtil.pack(new File(archive_location), new File(zipFilePath));
-                    //Instant uploadStart = Instant.now();
+                    Instant uploadStart = Instant.now();
                     logger.info("----start uploading---");
                     uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
                     appendOutputFile(name);
 
                     //Instant uploadEnd = Instant.now();
-                    //logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
+                    logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
                     //logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
                 } else {
                     logger.info("***Not found, Hence ignoring this path****");
@@ -80,14 +80,10 @@ public class DownloadApplication {
     private static void uploadObjectUsingCLI(File file, ProcessBuilder processBuilder) {
         logger.info("----uploadObjectUsingCLI start---");
         String bucketName = "coherent-commons-digital-assets-source";
-        //String bucketFullPath = bucketName+"/SEFI/"; //folder for SWWF
         String bucketFullPath = bucketName+"/CWEE/"; //folder for CWEE
-        //String bucketFullPath = bucketName+"/BRHO/"; //folder for WTSS
         String nameOfFileToStore = file.getName();
         try {
             // Get an object and print its contents.
-            //String command = "aws s3 cp "+ nameOfFileToStore +"s3://"+bucketName;
-            //String command = "aws s3 mv "+ nameOfFileToStore +" s3://"+bucketFullPath;
             StringBuilder com = new StringBuilder();
             com.append("aws s3 mv ");
             com.append(nameOfFileToStore);
@@ -97,7 +93,9 @@ public class DownloadApplication {
             logger.info("---AWS cli:: "+com);
             processBuilder.command("bash", "-c", String.valueOf(com));
             Process proStart = processBuilder.start();
+
             stopProcessOnCompletion(proStart);
+
             logger.info("---uploadObjectUsingCLI completed");
         } catch (SdkClientException | IOException e) {
             e.printStackTrace();
