@@ -1,6 +1,14 @@
 package com.file.download;
 
 import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.event.ProgressListener;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.opencsv.CSVWriter;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -117,26 +125,35 @@ public class DownloadApplication {
     }
 
     //upload using AWS SDK, its is comparatively slower than AWS CLI
-    /*private static File uploadObject(File file) {
+    private static File uploadObject(File file) {
         logger.info("----uploadObject method called---");
         Regions clientRegion = Regions.US_EAST_2;
         String bucketName = "coherent-commons-digital-assets-source";
         String nameOfFileToStore = file.getName();
         try {
+            logger.info("----AmazonS3ClientBuilder building---");
             AmazonS3 s3client = AmazonS3ClientBuilder
                     .standard()
                     .withRegion(clientRegion)
                     .withCredentials(new DefaultAWSCredentialsProviderChain())
                     .build();
             logger.info("----AmazonS3ClientBuilder build---");
-            s3client.putObject(new PutObjectRequest(bucketName, nameOfFileToStore, file)
-                    .withCannedAcl(CannedAccessControlList.BucketOwnerFullControl));
-
-        } catch (SdkClientException e) {
+            TransferManager transferManager = TransferManagerBuilder.standard()
+                    .withS3Client(s3client)
+                    .withMinimumUploadPartSize((long)(100 * 1024 * 1025))
+                    .withMultipartUploadThreshold((long)(50 * 1024 * 1025))
+                    .build();
+            Upload upload = transferManager.upload(bucketName,nameOfFileToStore,file);
+            upload.addProgressListener((ProgressListener) e-> logger.info("---Transferring file - "+e.getBytesTransferred()));
+            upload.waitForCompletion();
+            transferManager.shutdownNow();
+            /*s3client.putObject(new PutObjectRequest(bucketName, nameOfFileToStore, file)
+                    .withCannedAcl(CannedAccessControlList.BucketOwnerFullControl));*/
+        } catch (SdkClientException | InterruptedException e) {
             logger.info("----SdkClientException---");
             e.printStackTrace();
         }
         return file;
-    }*/
+    }
 }
 
