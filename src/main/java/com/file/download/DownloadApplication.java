@@ -1,64 +1,42 @@
 package com.file.download;
 
 import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.event.ProgressListener;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.opencsv.CSVWriter;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 public class DownloadApplication {
     private static final Logger logger = LogManager.getLogger(DownloadApplication.class);
 
-    static String destination = "/home/dartsapp/temp/";
-
     public static void main(String[] args) {
         SpringApplication.run(DownloadApplication.class, args);
 
-        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
-             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            for (CSVRecord csvRecord : csvParser) {
-                String name = csvRecord.get("name");
-                String archive_location = csvRecord.get("archive_location");
-                logger.info("Name: " + name);
-                logger.info("Archive_location: " + archive_location);
+        File inputFile = new File("TRES_I_42_15_J.zip");
 
-                if (Files.isDirectory(Paths.get(archive_location))) {
-                    Instant zipStart = Instant.now();
-                    logger.info("----Directory Exist, start zipping---");
-                    String zipFilePath = destination + name + ".zip";
-                    ZipUtil.pack(new File(archive_location), new File(zipFilePath));
-                    Instant uploadStart = Instant.now();
-                    logger.info("----start uploading---");
-                    uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
-                    appendOutputFile(name);
+        Instant uploadStart = Instant.now();
+        uploadObject(inputFile);
+        Instant uploadEnd = Instant.now();
 
-                    //Instant uploadEnd = Instant.now();
-                    logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
-                    //logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
-                } else {
-                    logger.info("***Not found, Hence ignoring this path****");
-                }
-            }
-        } catch (IOException ex){
-            ex.printStackTrace();
-        }
+        appendOutputFile(inputFile.getName());
+        logger.info("Time taken to zip: " + Duration.between(uploadStart, uploadEnd) + " milliseconds");
+
     }
 
     private static void appendOutputFile(String name) {
@@ -71,67 +49,37 @@ public class DownloadApplication {
         }
     }
 
-    //upload using AWS CLI, its is comparatively faster
-    private static void uploadObjectUsingCLI(File file, ProcessBuilder processBuilder) {
-        logger.info("----uploadObjectUsingCLI start---");
-        String bucketName = "coherent-commons-digital-assets-source";
-        String bucketFullPath = bucketName+"/CWEE/"; //folder for CWEE
-        String nameOfFileToStore = file.getName();
-        try {
-            // Get an object and print its contents.
-            StringBuilder com = new StringBuilder();
-            com.append("aws s3 mv ");
-            com.append(nameOfFileToStore);
-            com.append(" s3://");
-            com.append(bucketFullPath);
-
-            logger.info("---AWS cli:: "+com);
-            processBuilder.command("bash", "-c", String.valueOf(com));
-            Process proStart = processBuilder.start();
-
-            stopProcessOnCompletion(proStart);
-
-            logger.info("---uploadObjectUsingCLI completed");
-        } catch (SdkClientException | IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void stopProcessOnCompletion(Process process) {
-        logger.info("---stopProcessOnCompletion");
-        try {
-            process.waitFor(1, TimeUnit.MINUTES);
-            logger.info("---waitFor 1 minutes");
-            process.destroy();
-            logger.info("---destroy called");
-            process.waitFor();
-            logger.info("---process destroyed");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     //upload using AWS SDK, its is comparatively slower than AWS CLI
-    /*private static File uploadObject(File file) {
+    private static File uploadObject(File file) {
         logger.info("----uploadObject method called---");
-        Regions clientRegion = Regions.US_EAST_2;
-        String bucketName = "coherent-commons-digital-assets-source";
+        Regions clientRegion = Regions.EU_WEST_1;
+        String bucketName = "s3-euw1-ap-pe-df-pch-journals-source-d";
         String nameOfFileToStore = file.getName();
         try {
+            logger.info("----AmazonS3ClientBuilder building---");
             AmazonS3 s3client = AmazonS3ClientBuilder
                     .standard()
                     .withRegion(clientRegion)
                     .withCredentials(new DefaultAWSCredentialsProviderChain())
                     .build();
-            logger.info("----AmazonS3ClientBuilder build---");
-            s3client.putObject(new PutObjectRequest(bucketName, nameOfFileToStore, file)
-                    .withCannedAcl(CannedAccessControlList.BucketOwnerFullControl));
 
-        } catch (SdkClientException e) {
+            logger.info("----AmazonS3ClientBuilder build---");
+            TransferManager transferManager = TransferManagerBuilder.standard()
+                    .withS3Client(s3client)
+                    .withMinimumUploadPartSize((long)(100 * 1024 * 1025))
+                    .withMultipartUploadThreshold((long)(50 * 1024 * 1025))
+                    .build();
+
+            Upload upload = transferManager.upload(bucketName, nameOfFileToStore, file);
+            upload.addProgressListener((ProgressListener) e -> logger.info("---Transferring file - " + e.getBytesTransferred()));
+            upload.waitForCompletion();
+            transferManager.shutdownNow();
+
+        } catch (SdkClientException | InterruptedException e) {
             logger.info("----SdkClientException---");
             e.printStackTrace();
         }
         return file;
-    }*/
+    }
 }
 
