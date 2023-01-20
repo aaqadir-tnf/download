@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
@@ -33,9 +34,8 @@ public class DownloadApplication {
     public static void main(String[] args) {
         SpringApplication.run(DownloadApplication.class, args);
 
-        try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv.csv"));
-        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_inputcsv_2.csv"));
-        //try (Reader reader = Files.newBufferedReader(Paths.get("cwee_3.csv"));
+        try (Reader reader = Files.newBufferedReader(Paths.get("dove_issues_qa.csv"));
+        //try (Reader reader = Files.newBufferedReader(Paths.get("C:\\home\\demo_projects\\download\\src\\main\\resources\\dove_issues_qa.csv"));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
             ProcessBuilder processBuilder = new ProcessBuilder();
             for (CSVRecord csvRecord : csvParser) {
@@ -44,21 +44,40 @@ public class DownloadApplication {
                 logger.info("Name: " + name);
                 logger.info("Archive_location: " + archive_location);
 
-                if (Files.isDirectory(Paths.get(archive_location))) {
-                    Instant zipStart = Instant.now();
+                try {
+                    if (Files.isDirectory(Paths.get(archive_location))) {
+                        logger.info("----Directory Exist, GetNames---");
+                        File directoryPath = new File(archive_location);
+                        String[] contents = directoryPath.list();
+
+                        logger.info("----content found: "+ Arrays.stream(contents).count());
+                        logger.info("----appendOutputFile start---");
+                        try (CSVWriter csvWriter = new CSVWriter(new FileWriter(name + ".csv", false))) {
+                            csvWriter.writeNext(new String[]{name});
+                            csvWriter.writeNext(new String[]{Arrays.toString(contents)});
+                            logger.info("----csvWriter end---");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    /*Instant zipStart = Instant.now();
                     logger.info("----Directory Exist, start zipping---");
                     String zipFilePath = destination + name + ".zip";
                     ZipUtil.pack(new File(archive_location), new File(zipFilePath));
                     Instant uploadStart = Instant.now();
                     logger.info("----start uploading---");
                     uploadObjectUsingCLI(new File(zipFilePath), processBuilder);
-                    appendOutputFile(name);
+                    appendOutputFile(name);*/
 
-                    //Instant uploadEnd = Instant.now();
-                    logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
-                    //logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
-                } else {
-                    logger.info("***Not found, Hence ignoring this path****");
+                        //Instant uploadEnd = Instant.now();
+                        //logger.info("Time taken to zip: "+ Duration.between(zipStart, uploadStart) +" milliseconds");
+                        //logger.info("Time taken to upload: "+ Duration.between(uploadStart, uploadEnd) +" milliseconds");
+                    } else {
+                        logger.info("***Not found, Hence ignoring this path****");
+                    }
+                } catch (Exception ex){
+                    ex.getCause();
                 }
             }
         } catch (IOException ex){
