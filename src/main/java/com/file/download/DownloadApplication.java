@@ -25,7 +25,7 @@ public class DownloadApplication {
     private static final Logger logger = LogManager.getLogger(DownloadApplication.class);
 
     static String destination = "/home/dartsapp/temp/";
-    static String inputFile = "dove_issues.csv";
+    static String inputFile = "input_dove_issues.csv";
 
 
     public static void main(String[] args) {
